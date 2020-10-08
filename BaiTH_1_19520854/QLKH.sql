@@ -185,3 +185,37 @@ ALTER TABLE SANPHAM DROP COLUMN GHICHU
 SELECT * FROM SANPHAM
 -- 6. Lam the nao de thuoc tinh LOAIKH trong quan he KHACHHANG co the luu cac gia tri la:"vang lai","thuong xuyen","vip"...*/
 ALTER TABLE KHACHHANG ALTER COLUMN LOAIKH VARCHAR(50)
+-- 7. Don vi cua san pham chi co the la 'cay' 'cai 'quyen' 'chuc'
+ALTER TABLE SANPHAM add CONSTRAINT SP_DVT check(DVT='cay' or DVT='hop' or DVT='cai' or DVT='quyen' or DVT='chuc')
+-- 8. Gia san pham phai 500 tro len
+ALTER TABLE SANPHAM add CONSTRAINT SP_GIA check(GIA >= 500)
+-- 9. Moi lan mua khach hang phai mua it nhat 1 san pham
+ALTER TABLE CTHD add CONSTRAINT CTHD_SL check(SL>1)
+-- 10. Ngay khach hang dang ki phai lon hon ngay sinh
+ALTER TABLE KHACHHANG add CONSTRAINT KHACHHANG_NGSINH_NGDK check(NGSINH<NGDK)
+-- 11. Ngay mua phai be hon ngay dang ky
+ALTER TABLE HOADON ADD CONSTRAINT HOADON_NGHD CHECK(NGHD<=GETDATE())
+
+-- II
+/*1.Nhap du lieu cho cac quan he sau*/
+/*2.Tao quan he SANPHAM1 chua toan bo du lieu cua quan he SANPHAM.Tao quan he KHACHHANG1 chua toan bo du lieu cua quan he KHACHHANG.*/
+SELECT * INTO SANPHAM1 FROM SANPHAM
+SELECT * FROM SANPHAM1
+/*3.Cap nhat gia tang 5% doi voi nhung san pham do "thai lan" san xuat (cho quan he SANPHAM)*/
+
+UPDATE SANPHAM1
+SET GIA = GIA*1.05
+WHERE (NUOCSX ='THAILAN')
+SELECT * FROM SANPHAM1
+GO
+/*4.Cap nhat gia giam 5% doi voi nhung san pham do "trung quoc " san xuat co gia tu 10000 tro xuong (cho quan he SANPHAM)*/
+UPDATE SANPHAM1
+SET GIA = GIA*1.05
+WHERE((GIA<10000) and (NUOCSX='TRUNGQUOC'))
+SELECT * FROM SANPHAM1
+/*5.Cap nhat gia tri LOAIKH la "vip" doi voi nhung khach hang dang ky thanh vien truoc ngay 1/1/2007 co doanh so tu 10000000 tro len hoac khach hang dang ky thanh vien tu 1/1/2007 tro ve sau co doanh do tu 2000000 tro len (cho quan he KHACHHANG)*/
+SELECT * INTO KHACHHANG1 FROM KHACHHANG
+UPDATE KHACHHANG1
+SET LOAIKH = 'Vip'
+WHERE((NGDK<'01/01/2007' AND DOANHSO >1000000) OR (NGDK > '01/01/2007' AND DOANHSO>2000000))
+SELECT * FROM KHACHHANG1
