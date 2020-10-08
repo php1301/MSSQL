@@ -219,3 +219,53 @@ UPDATE KHACHHANG1
 SET LOAIKH = 'Vip'
 WHERE((NGDK<'01/01/2007' AND DOANHSO >1000000) OR (NGDK > '01/01/2007' AND DOANHSO>2000000))
 SELECT * FROM KHACHHANG1
+
+-- III
+-- 1. In ra danh sách các sản phẩm (MASP,TENSP) do “Trung Quoc” sản xuất.
+SELECT MASP, TENSP from SANPHAM
+WHERE(NUOCSX='TRUNGQUOC')
+-- 2. In ra danh sách các sản phẩm co don vi tinh la cay quyen.
+SELECT MASP, TENSP from SANPHAM
+WHERE(DVT='cay' or DVT='quyen')
+-- 3. In ra danh sách các sản phẩm (MASP,TENSP) co B va ket thuc la 01
+SELECT MASP, TENSP from SANPHAM
+WHERE(MASP like 'B%01')
+-- 4. In ra danh sách các sản phẩm (MASP,TENSP) do “Trung Quốc” sản xuất có giá từ 30.000 đến 40.000.
+SELECT MASP, TENSP from SANPHAM
+WHERE(GIA>30000 and GIA<40000 and NUOCSX='TRUNGQUOC')
+-- 5. In ra danh sách các sản phẩm (MASP,TENSP) do “Trung Quốc” sản xuất có giá từ 30.000 đến 40.000.
+SELECT MASP, TENSP from SANPHAM
+WHERE(GIA between 30000 and 40000 and(NUOCSX='TRUNGQUOC' OR NUOCSX='THAILAN'))
+-- 6. In ra các số hóa đơn, trị giá hóa đơn bán ra trong ngày 1/1/2007 và ngày 2/1/2007.
+SELECT SOHD, TRIGIA from HOADON
+WHERE (NGHD='01/01/2007' OR NGHD='02/01/2007')
+-- 7. In ra các số hóa đơn, trị giá hóa đơn trong tháng 1/2007, sắp xếp theo ngày (tăng dần) và trị giá của hóa đơn (giảm dần).
+SELECT SOHD, TRIGIA from HOADON
+WHERE (MONTH(NGHD)=1 and YEAR(NGHD)=2007)
+ORDER BY NGHD ASC, TRIGIA DESC
+-- 8. In ra danh sách các khách hàng (MAKH, HOTEN) đã mua hàng trong ngày 1/1/2007.
+SELECT KH.MAKH, HOTEN
+FROM KHACHHANG KH, HOADON HD 
+WHERE(KH.MAKH = HD.MAKH and HD.NGHD = '01/01/2007') 
+-- 9. In ra số hóa đơn, trị giá các hóa đơn do nhân viên có tên “Nguyen Van B” lập trong ngày 28/10/2006.
+SET DATEFORMAT DMY 
+SELECT HOADON.SOHD, TRIGIA
+FROM HOADON inner join NHANVIEN on HOADON.MANV = NHANVIEN.MANV
+WHERE NGHD = '28/10/2006' AND HOTEN = 'NGUYEN VAN B'
+-- 10. In ra danh sách các sản phẩm (MASP,TENSP) được khách hàng có tên “Nguyen Van A” mua trong tháng 10/2006.
+SELECT TENSP, MASP FROM SANPHAM WHERE MASP IN 
+(SELECT MASP FROM CTHD WHERE SOHD IN 
+(SELECT SOHD FROM HOADON WHERE NGHD between '1/10/2006' and '31/10/2006' and MAKH IN
+(SELECT MAKH FROM KHACHHANG WHERE HOTEN='Nguyen Van A')
+)
+)
+
+SELECT SANPHAM.MASP, TENSP FROM 
+(HOADON HD INNER JOIN KHACHHANG KH ON HD.MAKH = KH.MAKH) 
+INNER JOIN 
+(CTHD INNER JOIN SANPHAM on CTHD.MASP = SANPHAM.MASP ) 
+on CTHD.SOHD = HD.SOHD 
+ WHERE (NGHD between '1/10/2006' and '31/10/2006') AND HOTEN='Nguyen Van A'
+-- 11. Tìm các số hóa đơn đã mua sản phẩm có mã số “BB01” hoặc “BB02”.
+SELECT DISTINCT SOHD from CTHD
+WHERE MASP='BB01' or MASP = 'BB02'
