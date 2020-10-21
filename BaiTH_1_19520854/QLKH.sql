@@ -195,7 +195,51 @@ ALTER TABLE CTHD add CONSTRAINT CTHD_SL check(SL>1)
 ALTER TABLE KHACHHANG add CONSTRAINT KHACHHANG_NGSINH_NGDK check(NGSINH<NGDK)
 -- 11. Ngay mua phai be hon ngay dang ky
 ALTER TABLE HOADON ADD CONSTRAINT HOADON_NGHD CHECK(NGHD<=GETDATE())
-
+-- 11. Ngay mua hang se lon hon ngay dang ki thanh vien cua khach hang thanh vien*/
+/* trigger them thuoc tinh tren hoadon */
+GO
+create trigger nghd_ngdk_insert     
+on HOADON
+for insert
+as   
+    declare @nghd smalldatetime
+    declare @ngdk smalldatetime
+    select @nghd=nghd,@ngdk=ngdk from inserted,khachhang
+           where inserted.makh=khachhang.makh 
+    if @nghd<=@ngdk begin 
+                    rollback tran 
+                    raiserror('NGHD phai lon hon NGDK cua khach hang thanh vien',16,1) 
+                    return  end  
+/*trigger update nghd tren hoadon */
+GO
+create trigger nghd_ngdk_update 
+on HOADON
+for update
+as   
+    declare @nghd smalldatetime
+    declare @ngdk smalldatetime
+    select @nghd=nghd,@ngdk=ngdk from updated,khachhang
+           where updated.makh=khachhang.makh 
+    if @nghd<@ngdk begin 
+                    rollback tran 
+                    raiserror('NGHD phai lon hon NGDK cua khach hang thanh vien',16,1) 
+                    return  end  
+/* trigger sua thuoc tinh NGDK tren khachhang */
+GO
+create trigger ngdk_nghd_update 
+on KHACHANG
+for update
+as   
+    declare @nghd smalldatetime
+    declare @ngdk smalldatetime
+    select @nghd=nghd,@ngdk=ngdk from updated,hoadon
+           where updated.makh=hoadon.makh 
+    if @nghd<@ngdk begin 
+                    rollback tran 
+                    raiserror('NGHD phai lon hon NGDK cua khach hang thanh vien',16,1) 
+                    return  end  
+/*Ki?m tra ket qua kh01 NGDK 22/7/2006 */
+INSERT INTO HOADON VALUES ('1024','20060721','KH01','NV01',320000)
 -- II
 /*1.Nhap du lieu cho cac quan he sau*/
 /*2.Tao quan he SANPHAM1 chua toan bo du lieu cua quan he SANPHAM.Tao quan he KHACHHANG1 chua toan bo du lieu cua quan he KHACHHANG.*/
