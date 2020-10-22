@@ -197,49 +197,7 @@ ALTER TABLE KHACHHANG add CONSTRAINT KHACHHANG_NGSINH_NGDK check(NGSINH<NGDK)
 ALTER TABLE HOADON ADD CONSTRAINT HOADON_NGHD CHECK(NGHD<=GETDATE())
 -- 11. Ngay mua hang se lon hon ngay dang ki thanh vien cua khach hang thanh vien*/
 /* trigger them thuoc tinh tren hoadon */
-GO
-create trigger nghd_ngdk_insert     
-on HOADON
-for insert
-as   
-    declare @nghd smalldatetime
-    declare @ngdk smalldatetime
-    select @nghd=nghd,@ngdk=ngdk from inserted,khachhang
-           where inserted.makh=khachhang.makh 
-    if @nghd<=@ngdk begin 
-                    rollback tran 
-                    raiserror('NGHD phai lon hon NGDK cua khach hang thanh vien',16,1) 
-                    return  end  
-/*trigger update nghd tren hoadon */
-GO
-create trigger nghd_ngdk_update 
-on HOADON
-for update
-as   
-    declare @nghd smalldatetime
-    declare @ngdk smalldatetime
-    select @nghd=nghd,@ngdk=ngdk from updated,khachhang
-           where updated.makh=khachhang.makh 
-    if @nghd<@ngdk begin 
-                    rollback tran 
-                    raiserror('NGHD phai lon hon NGDK cua khach hang thanh vien',16,1) 
-                    return  end  
-/* trigger sua thuoc tinh NGDK tren khachhang */
-GO
-create trigger ngdk_nghd_update 
-on KHACHANG
-for update
-as   
-    declare @nghd smalldatetime
-    declare @ngdk smalldatetime
-    select @nghd=nghd,@ngdk=ngdk from updated,hoadon
-           where updated.makh=hoadon.makh 
-    if @nghd<@ngdk begin 
-                    rollback tran 
-                    raiserror('NGHD phai lon hon NGDK cua khach hang thanh vien',16,1) 
-                    return  end  
-/*Ki?m tra ket qua kh01 NGDK 22/7/2006 */
-INSERT INTO HOADON VALUES ('1024','20060721','KH01','NV01',320000)
+
 -- II
 /*1.Nhap du lieu cho cac quan he sau*/
 /*2.Tao quan he SANPHAM1 chua toan bo du lieu cua quan he SANPHAM.Tao quan he KHACHHANG1 chua toan bo du lieu cua quan he KHACHHANG.*/
@@ -313,3 +271,95 @@ on CTHD.SOHD = HD.SOHD
 -- 11. Tìm các số hóa đơn đã mua sản phẩm có mã số “BB01” hoặc “BB02”.
 SELECT DISTINCT SOHD from CTHD
 WHERE MASP='BB01' or MASP = 'BB02'
+-- 12. Tìm các số hóa đơn đã mua sản phẩm có mã số “BB01” hoặc “BB02”, mỗi sản phẩm mua với số lượng từ 10 đến 20.
+SELECT  SOHD 
+FROM CTHD
+WHERE (MASP = 'BB01' or MASP='BB02') and SL BETWEEN 10 and 20
+-- 13.Tìm các số hóa đơn mua cùng lúc 2 sản phẩm có mã số “BB01” và “BB02”, mỗi sản phẩm mua với số lượng từ 10 đến 20.
+SELECT SOHD, SL
+FROM CTHD
+WHERE(MASP='BB01' AND SOHD IN 
+(SELECT SOHD FROM CTHD WHERE MASP='BB02' AND SL BETWEEN 10 and 20)
+)
+--14. In ra danh sách các sản phẩm (MASP,TENSP) do “Trung Quoc” sản xuất hoặc các sản phẩm được bán ra trong ngày 1/1/2007.
+SELECT SP.MASP,TENSP
+FROM SANPHAM SP, CTHD CTHD, HOADON HD 
+WHERE (SP.MASP=CTHD.MASP)AND (HD.SOHD=CTHD.SOHD)AND((NUOCSX='TRUNGQUOC') OR (NGHD='20070101'))
+GROUP BY SP.MASP,SP.TENSP
+--15. In ra danh sách các sản phẩm (MASP,TENSP) không bán được.
+SELECT MASP, TENSP
+FROM SANPHAM
+WHERE MASP NOT IN(SELECT MASP FROM CTHD)
+--16. In ra danh sách các sản phẩm (MASP,TENSP) không bán được trong nam 2006
+SELECT MASP, TENSP
+FROM SANPHAM
+WHERE MASP NOT IN
+(SELECT MASP FROM CTHD WHERE SOHD IN
+(SELECT SOHD FROM HOADON WHERE YEAR(NGHD) = 2006)
+)
+--17. In ra danh sách các sản phẩm (MASP,TENSP) do “Trung Quoc” sản xuất không bán được trong năm 2006.
+SELECT MASP, TENSP 
+FROM SANPHAM
+WHERE (NUOCSX='TRUNGQUOC' and MASP NOT IN 
+(SELECT MASP FROM CTHD WHERE SOHD IN 
+(SELECT SOHD FROM HOADON WHERE YEAR(NGHD) = 2006)
+)
+)
+
+SELECT COUNT(SOHD) as SoHD_BANDUOC
+FROM HOADON
+WHERE MAKH='Null'
+SELECT * from HOADON
+
+-- 21. Có bao nhiêu sản phẩm khác nhau được bán ra trong năm 2006.
+select COUNT(distinct masp)as sosp_2006
+from CTHD,HOADON
+where HOADON.sohd=CTHD.sohd and  year(nghd)=2006
+
+-- 22. Cho biết trị giá hóa đơn cao nhất, thấp nhất là bao nhiêu?
+SELECT MAX(TRIGIA) as max_tg_hd,
+       MIN(TRIGIA) as min_tg_hd
+FROM HOADON
+-- 23. Trị giá trung bình của tất cả các hóa đơn được bán ra trong năm 2006 là bao nhiêu?
+SELECT AVG(TRIGIA) as TRIGIA_TB
+FROM HOADON
+WHERE year(NGHD) = 2006
+-- 24. Tính doanh thu bán hàng trong năm 2006.
+SELECT SUM(TRIGIA) as TRIGIA_SUM
+FROM HOADON 
+WHERE YEAR(NGHD) = 2006
+
+-- 32.Tính tổng số sản phẩm do “Trung Quoc” sản xuất.
+SELECT COUNT(MASP) as TRIGIA_TQ
+FROM SANPHAM 
+WHERE NUOCSX = 'TRUNGQUOC'
+-- 33 Tinh Tong so San Pham cua tung nuoc.
+SELECT NUOCSX,count(TENSP)as so_sp
+FROM SANPHAM
+group by NUOCSX
+-- 34. Với từng nước sản xuất, tìm giá bán cao nhất, thấp nhất, trung bình của các sản phẩm.
+SELECT NUOCSX, 
+MIN(GIA) as min_gia,
+MAX(GIA) as max_gia,
+AVG(GIA) as avg_gia
+FROM SANPHAM
+GROUP BY NUOCSX
+
+-- 35. Tính doanh thu bán hàng mỗi ngày.
+SELECT NGHD, SUM(TRIGIA) as hoadon_ngay
+FROM HOADON
+GROUP BY NGHD
+
+-- 36. Tính tổng số lượng sản phẩm bán ra trong tháng 10/2006.
+SELECT CTHD.MASP, SUM(SL) as tong_sl
+FROM CTHD, HOADON HD
+WHERE CTHD.SOHD = HD.SOHD
+AND MONTH(HD.NGHD)=10 and YEAR(HD.NGHD)=2006
+GROUP BY MASP
+
+-- 37. Tính doanh thu bán hàng của từng tháng trong năm 2006.
+
+SELECT MONTH(NGHD) as thang, SUM(TRIGIA) as doanh_thu
+FROM HOADON
+WHERE YEAR(NGHD) = 2006
+GROUP BY MONTH(NGHD)
